@@ -18,10 +18,12 @@ use std::process;
 use libc::{
     c_int, chown, chroot, flock, fork, getpid, gid_t, mode_t, setsid, setuid, uid_t, umask, LOCK_NB, LOCK_SH, LOCK_UN,
 };
+use builder_derive::Builder;
 
 use crate::error::Error;
 use crate::result::Result;
 
+#[derive(Debug, Builder)]
 pub struct Daemonize {
     current_dir: PathBuf,
     pid_file: Option<PathBuf>,
