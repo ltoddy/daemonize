@@ -15,10 +15,10 @@ use std::os::unix::io::AsRawFd;
 use std::path::PathBuf;
 use std::process;
 
+use builder_derive::Builder;
 use libc::{
     c_int, chown, chroot, flock, fork, getpid, gid_t, mode_t, setsid, setuid, uid_t, umask, LOCK_NB, LOCK_SH, LOCK_UN,
 };
-use builder_derive::Builder;
 
 use crate::error::Error;
 use crate::result::Result;
