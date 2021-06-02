@@ -35,20 +35,6 @@ pub struct Daemonize {
 }
 
 impl Daemonize {
-    pub fn new() -> Self {
-        Daemonize {
-            current_dir: PathBuf::from("/Users/ltoddy/github/ltoddy/daemonize-rs"),
-            pid_file: None,
-            chown_pid_file: false,
-            user: None,
-            group: None,
-            umask: 0o027,
-            root: None,
-        }
-    }
-}
-
-impl Daemonize {
     pub fn start(self) -> Result<()> {
         unsafe {
             perform_fork()?;

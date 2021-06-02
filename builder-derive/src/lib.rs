@@ -1,8 +1,9 @@
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use syn::spanned::Spanned;
-use syn::{parse_macro_input, Data, DataStruct, DeriveInput, Fields, Ident, Result};
+use syn::{
+    parse_macro_input, punctuated::Punctuated, spanned::Spanned, Data, DataStruct, DeriveInput, Field, Fields::Named,
+    FieldsNamed, Ident, Result, Token,
+};
 
 #[proc_macro_derive(Builder)]
 pub fn derive(token: TokenStream) -> TokenStream {
@@ -14,38 +15,57 @@ pub fn derive(token: TokenStream) -> TokenStream {
     }
 }
 
-fn derive_impl(ast: &DeriveInput) -> Result<TokenStream2> {
-    let builder = generate_builder_struct(ast)?;
-
-    Ok(quote! {
-        #builder
-    })
-}
-
-fn generate_builder_struct(ast: &DeriveInput) -> Result<TokenStream2> {
-    let DeriveInput { vis, ident, .. } = ast;
+fn derive_impl(ast: &DeriveInput) -> Result<proc_macro2::TokenStream> {
+    let DeriveInput { ident, .. } = ast;
     let fields = struct_fields(ast)?;
 
     let name = format!("{}Builder", ident.to_string());
-    let ident = Ident::new(&name, ident.span());
+    let builder_ident = Ident::new(&name, ident.span());
 
     let field_idents = fields.iter().map(|f| &f.ident).collect::<Vec<_>>();
     let field_types = fields.iter().map(|f| &f.ty).collect::<Vec<_>>();
 
     let ast = quote! {
-        #vis struct #ident {
+        pub struct #builder_ident {
             #(#field_idents: std::option::Option<#field_types>),*
+        }
+
+        impl #builder_ident {
+            #(pub fn #field_idents(&mut self, #field_idents: #field_types) -> &mut Self {
+                self.#field_idents = std::option::Option::Some(#field_idents);
+                self
+            })*
+        }
+
+        impl #builder_ident {
+            pub fn build(self) -> #ident {
+                #ident {
+                    #(#field_idents: self.#field_idents.unwrap_or_default()),*
+                }
+            }
+        }
+
+        impl #ident {
+            pub fn builder() -> #builder_ident {
+                #builder_ident {
+                    #(#field_idents: std::option::Option::None),*
+                }
+            }
         }
     };
 
     Ok(ast)
 }
 
-fn struct_fields(ast: &DeriveInput) -> Result<&Fields> {
+fn struct_fields(ast: &DeriveInput) -> Result<&Punctuated<Field, Token![,]>> {
     let DeriveInput { data, .. } = ast;
 
-    if let Data::Struct(DataStruct { fields, .. }) = data {
-        return Ok(fields);
+    if let Data::Struct(DataStruct {
+        fields: Named(FieldsNamed { named, .. }),
+        ..
+    }) = data
+    {
+        return Ok(named);
     }
 
     Err(syn::Error::new(ast.span(), "only derive struct"))
