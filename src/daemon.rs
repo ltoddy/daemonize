@@ -1,11 +1,11 @@
 use std::env::set_current_dir;
 use std::fs::{File, OpenOptions};
-use std::os::unix::io::IntoRawFd;
+use std::io::{stderr, stdin, stdout, Write};
+use std::os::unix::io::AsRawFd;
 use std::path::PathBuf;
 
 use crate::ffi_wrapper::{apply_fork, duplicate_file_descriptor2, get_pid, set_session_id, umask};
 use crate::result::Result;
-use std::io::Write;
 
 pub struct Daemon {
     pidfile: Option<PathBuf>,
@@ -30,10 +30,10 @@ impl Daemon {
         apply_fork()?; // double-fork, this is a magic, lol :)
 
         let devnull = File::open("/dev/null")?;
-        let devnull = devnull.into_raw_fd();
-        duplicate_file_descriptor2(devnull, libc::STDIN_FILENO)?;
-        duplicate_file_descriptor2(devnull, libc::STDOUT_FILENO)?;
-        duplicate_file_descriptor2(devnull, libc::STDOUT_FILENO)?;
+        let devnull = devnull.as_raw_fd();
+        duplicate_file_descriptor2(devnull, stdin().as_raw_fd())?;
+        duplicate_file_descriptor2(devnull, stdout().as_raw_fd())?;
+        duplicate_file_descriptor2(devnull, stderr().as_raw_fd())?;
 
         self.record_pid()?;
         Ok(())
