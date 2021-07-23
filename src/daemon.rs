@@ -29,13 +29,14 @@ impl Daemon {
         umask(self.mask.unwrap_or(0));
         apply_fork()?; // double-fork, this is a magic, lol :)
 
+        self.record_pid()?;
+
         let devnull = File::open("/dev/null")?;
         let devnull = devnull.as_raw_fd();
         duplicate_file_descriptor2(devnull, stdin().as_raw_fd())?;
         duplicate_file_descriptor2(devnull, stdout().as_raw_fd())?;
         duplicate_file_descriptor2(devnull, stderr().as_raw_fd())?;
 
-        self.record_pid()?;
         Ok(())
     }
 
@@ -48,6 +49,7 @@ impl Daemon {
                 .open(pidfile)?;
 
             let pid = get_pid()?;
+            println!("PID: {}", pid);
 
             file.write_all(format!("{}", pid).as_bytes())?;
         }
