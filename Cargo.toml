@@ -9,5 +9,5 @@ members = [
 ]
 
 [dependencies]
-libc = "0.2.93"
+libc = "0.2"
 builder_derive = { path = "builder-derive" }
